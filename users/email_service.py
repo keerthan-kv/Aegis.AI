@@ -15,10 +15,17 @@ Security Notes:
   - No API keys are hardcoded — all from environment variables
 """
 
+import os
 import logging
 
 from django.conf import settings
 from django.core.mail import send_mail
+
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+except ImportError:
+    SendGridAPIClient = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +99,21 @@ def send_otp_email(user, otp):
     )
 
     try:
+        api_key = os.environ.get("EMAIL_HOST_PASSWORD", "")
+        if api_key.startswith("SG.") and SendGridAPIClient:
+            message = Mail(
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to_emails=user.email,
+                subject=subject,
+                plain_text_content=plain_message,
+                html_content=html_message
+            )
+            sg = SendGridAPIClient(api_key)
+            sg.send(message)
+            logger.info(f"OTP email sent to {user.email} via SendGrid HTTP API")
+            return True
+            
+        # Fallback to standard SMTP if not using SendGrid API Key
         sent = send_mail(
             subject=subject,
             message=plain_message,
@@ -180,6 +202,21 @@ def send_password_reset_email(user, reset_url):
     )
 
     try:
+        api_key = os.environ.get("EMAIL_HOST_PASSWORD", "")
+        if api_key.startswith("SG.") and SendGridAPIClient:
+            message = Mail(
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to_emails=user.email,
+                subject=subject,
+                plain_text_content=plain_message,
+                html_content=html_message
+            )
+            sg = SendGridAPIClient(api_key)
+            sg.send(message)
+            logger.info(f"Password reset email sent to {user.email} via SendGrid HTTP API")
+            return True
+            
+        # Fallback to standard SMTP if not using SendGrid API Key
         sent = send_mail(
             subject=subject,
             message=plain_message,
