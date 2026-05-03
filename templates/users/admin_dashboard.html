@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – Aegis.AI{% endblock %}
+{% block page_title %}<i class="bi bi-speedometer2 me-2" style="color:var(--primary)"></i>Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-wrap fade-in">
+  
+  <div class="row g-4 mt-2 slide-up stagger-1">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-person-fill-add" style="color:var(--primary)"></i>Pending Approvals</div>
+        <div class="card-body p-0">
+          {% if approvals %}
+          <div class="list-group list-group-flush">
+            {% for approval in approvals %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+              <div>
+                <h6 class="mb-1 fw-bold">{{ approval.user.full_name }}</h6>
+                <small class="text-muted">{{ approval.user.email }}</small>
+              </div>
+              <form method="post" action="{% url 'admin_approve' approval.id %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success px-3"><i class="bi bi-check2"></i> Approve</button>
+                <button type="submit" name="action" value="reject" class="btn btn-sm btn-outline-danger px-3"><i class="bi bi-x-lg"></i> Reject</button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-check-circle text-success opacity-75" style="font-size: 3rem;"></i>
+            <p class="mt-3 text-muted mb-0">All caught up! No pending approvals.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-shield-lock" style="color:var(--violet)"></i>Security Events Feed</div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+            {% for log in recent_logs %}
+            <div class="list-group-item py-3">
+              <div class="d-flex w-100 justify-content-between mb-1">
+                <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ log.timestamp|date:"M d, H:i" }}</small>
+                <small class="text-muted font-monospace">{{ log.ip_address }}</small>
+              </div>
+              <p class="mb-0 fw-medium"><span class="text-primary">{{ log.user.email|default:"System" }}</span>: {{ log.action }}</p>
+            </div>
+            {% empty %}
+            <div class="text-center py-4 text-muted">No recent security events.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

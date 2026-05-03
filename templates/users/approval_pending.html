@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Approval Pending - Aegis.AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
+</head>
+<body class="d-flex align-items-center justify-content-center vh-100 bg-light">
+  <div class="card p-5 text-center shadow-sm">
+    <h2 class="mb-3 text-warning">Approval Pending</h2>
+    <p>Your employee account has been created successfully, but it requires administrator approval before you can log in.</p>
+    <p>Please check back later or contact your system administrator.</p>
+    <a href="{% url 'login' %}" class="btn btn-primary mt-3">Return to Login</a>
+  </div>
+</body>
+</html>

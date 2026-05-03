@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}System Audit Logs – Aegis.AI{% endblock %}
+{% block page_title %}<i class="bi bi-journal-text me-2" style="color:var(--primary)"></i>System Audit Logs{% endblock %}
+
+{% block content %}
+<div class="page-wrap fade-in">
+  <div class="card p-0 mb-4 slide-up stagger-1">
+    <div class="card-header px-3 pt-3 pb-0 border-bottom-0 bg-transparent">
+      <ul class="nav nav-tabs border-0" id="logTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active fw-medium" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab"><i class="bi bi-shield-exclamation me-2"></i>Action Logs</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-medium" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab"><i class="bi bi-box-arrow-in-right me-2"></i>Login Attempts</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-medium" id="prompt-tab" data-bs-toggle="tab" data-bs-target="#prompt" type="button" role="tab"><i class="bi bi-cpu me-2"></i>Prompt AI Activity</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link fw-medium" id="stego-tab" data-bs-toggle="tab" data-bs-target="#stego" type="button" role="tab"><i class="bi bi-incognito me-2"></i>StegoShield Activity</button>
+        </li>
+      </ul>
+    </div>
+    
+    <div class="tab-content border-top" id="logTabsContent" style="border-color: var(--border) !important;">
+      <!-- Audit Tab -->
+      <div class="tab-pane fade show active p-0" id="audit" role="tabpanel">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+          <table class="table table-hover mb-0 align-middle">
+            <thead style="background: var(--bg-1); position: sticky; top: 0; z-index: 1;">
+              <tr><th class="ps-4">Time</th><th>User</th><th>Action</th><th class="pe-4">IP Address</th></tr>
+            </thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
+                <td class="ps-4 text-muted small" style="white-space:nowrap"><i class="bi bi-clock me-1"></i>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                <td class="fw-medium">{{ log.user.email|default:"System" }}</td>
+                <td>{{ log.action }}</td>
+                <td class="pe-4 font-monospace text-muted">{{ log.ip_address }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Login Tab -->
+      <div class="tab-pane fade p-0" id="login" role="tabpanel">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+          <table class="table table-hover mb-0 align-middle">
+            <thead style="background: var(--bg-1); position: sticky; top: 0; z-index: 1;">
+              <tr><th class="ps-4">Time</th><th>User</th><th>IP Address</th><th>Status</th><th class="pe-4">Device</th></tr>
+            </thead>
+            <tbody>
+              {% for attempt in login_attempts %}
+              <tr>
+                <td class="ps-4 text-muted small" style="white-space:nowrap">{{ attempt.timestamp|date:"Y-m-d H:i:s" }}</td>
+                <td class="fw-medium">{{ attempt.user.email|default:"Unknown" }}</td>
+                <td class="font-monospace text-muted">{{ attempt.ip_address }}</td>
+                <td>
+                  {% if attempt.successful %}<span class="badge bg-success bg-opacity-10 text-success border border-success">Success</span>
+                  {% else %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Failed</span>{% endif %}
+                </td>
+                <td class="pe-4 text-muted small text-truncate" style="max-width: 200px;" title="{{ attempt.device_info }}">{{ attempt.device_info }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Prompt Tab -->
+      <div class="tab-pane fade p-0" id="prompt" role="tabpanel">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+          <table class="table table-hover mb-0 align-middle">
+            <thead style="background: var(--bg-1); position: sticky; top: 0; z-index: 1;">
+              <tr><th class="ps-4">Time</th><th>User</th><th>Action</th><th>Risk Score</th><th>Detected PII</th><th class="pe-4 text-end">Details</th></tr>
+            </thead>
+            <tbody>
+              {% for log in prompt_logs %}
+              <tr>
+                <td class="ps-4 text-muted small" style="white-space:nowrap">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                <td class="fw-medium">{{ log.user.email }}</td>
+                <td>
+                  <span class="badge {% if log.action == 'ALLOW' %}bg-success text-white{% elif log.action == 'TOKENIZE' %}bg-warning text-dark{% else %}bg-danger text-white{% endif %}">{{ log.action }}</span>
+                </td>
+                <td><span class="fw-bold {% if log.risk_score >= 60 %}text-danger{% elif log.risk_score >= 20 %}text-warning{% else %}text-success{% endif %}">{{ log.risk_score }}%</span></td>
+                <td class="text-muted">{{ log.detected_types|join:", "|default:"—" }}</td>
+                <td class="pe-4 text-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#promptModal{{ log.id }}">View</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-muted py-5">No Prompt AI activity recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Stego Tab -->
+      <div class="tab-pane fade p-0" id="stego" role="tabpanel">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+          <table class="table table-hover mb-0 align-middle">
+            <thead style="background: var(--bg-1); position: sticky; top: 0; z-index: 1;">
+              <tr><th class="ps-4">Time</th><th>User</th><th>Operation</th><th>Method</th><th>Status</th><th>IP Address</th><th class="pe-4 text-end">Details</th></tr>
+            </thead>
+            <tbody>
+              {% for log in stego_logs %}
+              <tr>
+                <td class="ps-4 text-muted small" style="white-space:nowrap">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                <td class="fw-medium">{{ log.user.email }}</td>
+                <td class="fw-medium">{{ log.action }}</td>
+                <td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ log.method }}</span></td>
+                <td>
+                  {% if log.status == 'SUCCESS' %}<span class="badge bg-success bg-opacity-10 text-success border border-success">Success</span>
+                  {% elif log.status == 'UNAUTHORIZED' %}<span class="badge bg-warning bg-opacity-10 text-warning border border-warning">Unauthorized</span>
+                  {% else %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Failed</span>{% endif %}
+                </td>
+                <td class="font-monospace text-muted">{{ log.ip_address|default:"Unknown" }}</td>
+                <td class="pe-4 text-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#stegoModal{{ log.id }}">View</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-5">No StegoShield activity recorded.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals placed explicitly OUTSIDE the table/tabs to fix backdrop & click issues -->
+{% for log in prompt_logs %}
+<div class="modal fade" id="promptModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title">Prompt Details - {{ log.user.email }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-primary fw-bold">Original Prompt</h6>
+        <pre class="bg-light p-3 rounded border text-dark" style="white-space: pre-wrap; word-break: break-all;">{{ log.decrypted_original_prompt }}</pre>
+        
+        <h6 class="text-warning fw-bold mt-4">Processed Output / Response</h6>
+        <pre class="bg-light p-3 rounded border text-dark" style="white-space: pre-wrap; word-break: break-all;">{{ log.processed_prompt|default:"[No Output]" }}</pre>
+        
+        {% if log.reasons %}
+        <h6 class="text-danger fw-bold mt-4">Policy / Block Reasons</h6>
+        <ul class="text-muted mb-0">
+          {% for reason in log.reasons %}
+          <li>{{ reason }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% for log in stego_logs %}
+<div class="modal fade" id="stegoModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title">StegoShield Details - {{ log.user.email }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-info fw-bold">Secret Message</h6>
+        <pre class="bg-light p-3 rounded border text-dark" style="white-space: pre-wrap; word-break: break-all;">{{ log.decrypted_secret|default:"[Not Recorded]" }}</pre>
+
+        <h6 class="text-muted fw-bold mt-4">Cover Text / File</h6>
+        <pre class="bg-light p-3 rounded border text-dark" style="white-space: pre-wrap; word-break: break-all;">{{ log.decrypted_cover|default:"[None]" }}</pre>
+
+        <h6 class="text-danger fw-bold mt-4">Passkey / Key</h6>
+        <pre class="bg-light p-3 rounded border text-dark" style="white-space: pre-wrap; word-break: break-all;">{{ log.decrypted_passkey|default:"[No Passkey Used]" }}</pre>
+
+        <h6 class="text-secondary fw-bold mt-4">Audit Details</h6>
+        <pre class="bg-light p-3 rounded border text-dark mb-0" style="white-space: pre-wrap; word-break: break-all;">{{ log.details }}</pre>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}

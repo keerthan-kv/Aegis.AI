@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Aegis.AI{% endblock %}
+{% block page_title %}<i class="bi bi-grid-1x2-fill me-2" style="color:var(--primary)"></i>Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-wrap fade-in">
+
+  <!-- ── Hero Banner ── -->
+  <div class="hero-card mb-4 slide-up stagger-1">
+    <div class="row align-items-center" style="position:relative;z-index:1">
+      <div class="col-md-8">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="hero-avatar"><i class="bi bi-person-fill"></i></div>
+          <div>
+            <h2 class="hero-title mb-0">Welcome back, {{ user.username|title }}</h2>
+            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+              <span class="role-badge role-{{ user.role|lower }}">
+                <i class="bi bi-person-badge-fill"></i>{{ user.get_role_display }}
+              </span>
+              <span class="firewall-pulse"><span class="pulse-dot"></span>Firewall Active</span>
+              <span style="font-size:0.78rem;color:var(--text-3)">Session active</span>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--text-2);font-size:0.9rem;margin:0">
+          The Aegis.AI firewall is <span class="text-success fw-semibold">active</span>
+          and monitoring all outgoing prompts in real-time.
+        </p>
+      </div>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="{% url 'prompt' %}" class="btn btn-primary">
+          <i class="bi bi-send-fill"></i>Launch AI Prompt
+        </a>
+        {% if user.is_employee_role %}
+        <a href="{% url 'stegoshield_home' %}" class="btn stego-btn-nav ms-2">
+          <i class="bi bi-shield-shaded"></i>STEGOSHIELD
+        </a>
+        {% endif %}
+        {% if user.is_admin_role %}
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-ghost ms-2">
+          <i class="bi bi-speedometer2"></i>Admin Dashboard
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Stat Cards (no sparklines) ── -->
+  <div class="row g-3 mb-4 slide-up stagger-2">
+    <div class="col-md-4">
+      <div class="stat-card stat-card-blue">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div class="stat-icon-wrap si-blue"><i class="bi bi-shield-fill-check"></i></div>
+          <span class="badge" style="background:var(--success-g);color:var(--success);border:1px solid rgba(34,211,165,0.3);font-size:0.68rem;font-weight:700">
+            <i class="bi bi-circle-fill me-1" style="font-size:0.45rem"></i>ONLINE
+          </span>
+        </div>
+        <div class="stat-label">Firewall Status</div>
+        <div class="stat-value text-success">Active</div>
+        <div class="stat-trend mt-2">
+          <i class="bi bi-shield-lock text-success"></i>
+          <span style="color:var(--text-3)">All systems nominal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-card stat-card-purple">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div class="stat-icon-wrap si-purple"><i class="bi bi-person-badge-fill"></i></div>
+          <span class="role-badge role-{{ user.role|lower }}" style="font-size:0.65rem">
+            {% if user.role == 'ADMIN' %}Full Access
+            {% elif user.role == 'EMPLOYEE' %}Standard
+            {% else %}Restricted{% endif %}
+          </span>
+        </div>
+        <div class="stat-label">Your Role</div>
+        <div class="stat-value">{{ user.get_role_display }}</div>
+        <div class="stat-trend mt-2">
+          <i class="bi bi-key" style="color:var(--violet)"></i>
+          <span style="color:var(--text-3)">Role-based access enforced</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-card stat-card-teal">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+          <div class="stat-icon-wrap si-teal"><i class="bi bi-journal-check"></i></div>
+          <span class="badge" style="background:var(--info-g);color:var(--info);border:1px solid rgba(96,165,250,0.3);font-size:0.68rem;font-weight:600">Total</span>
+        </div>
+        <div class="stat-label">Your Submissions</div>
+        <div class="stat-value">{{ total_submissions }}</div>
+        <div class="stat-trend mt-2">
+          <i class="bi bi-clock" style="color:var(--accent)"></i>
+          <span style="color:var(--text-3)">
+            {% if last_submission %}Last: {{ last_submission|date:"M d, H:i" }}{% else %}No submissions yet{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Lower Row ── -->
+  <div class="row g-3 slide-up stagger-3">
+
+    <!-- Access Permissions -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-key-fill"></i>Access Permissions</div>
+        <div class="card-body">
+          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+            {% if user.role == 'ADMIN' %}
+            <li class="perm-row perm-allow"><i class="bi bi-check-circle-fill"></i>Full prompt access</li>
+            <li class="perm-row perm-allow"><i class="bi bi-check-circle-fill"></i>View all audit logs</li>
+            <li class="perm-row perm-allow"><i class="bi bi-check-circle-fill"></i>Access Django admin panel</li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>API keys are BLOCKED <span class="perm-note">(security policy enforced)</span></li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>Source code is BLOCKED <span class="perm-note">(all roles)</span></li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>SQL queries are BLOCKED <span class="perm-note">(all roles)</span></li>
+            {% elif user.role == 'EMPLOYEE' %}
+            <li class="perm-row perm-allow"><i class="bi bi-check-circle-fill"></i>Submit prompts to AI</li>
+            <li class="perm-row perm-warn"><i class="bi bi-shuffle"></i>Emails &amp; phones tokenized</li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>API keys are BLOCKED <span class="perm-note">(security policy)</span></li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>Cannot access audit logs</li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>No admin panel access</li>
+            {% else %}
+            <li class="perm-row perm-allow"><i class="bi bi-check-circle-fill"></i>Submit basic prompts</li>
+            <li class="perm-row perm-warn"><i class="bi bi-shuffle"></i>Emails &amp; phones tokenized</li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>API keys are BLOCKED <span class="perm-note">(security policy)</span></li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>Source code BLOCKED</li>
+            <li class="perm-row perm-block"><i class="bi bi-x-octagon-fill"></i>No audit log access</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header d-flex gap-2 align-items-center">
+          <i class="bi bi-clock-history"></i>Recent Activity
+          <span class="ms-auto" style="font-size:0.72rem;color:var(--text-3);font-weight:400">
+            Showing last {{ recent_logs|length }} of {{ total_submissions }} submission{{ total_submissions|pluralize }}
+          </span>
+        </div>
+        <div class="card-body" style="padding:0">
+          {% if recent_logs %}
+          <div style="overflow:hidden">
+            {% for log in recent_logs %}
+            <div class="activity-row {% if not forloop.last %}activity-row-border{% endif %}">
+              <div class="activity-dot act-{{ log.action|lower }}"></div>
+              <div class="activity-main">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="action-badge action-{{ log.action|lower }}">{{ log.action }}</span>
+                  <span style="font-size:0.82rem;color:var(--text-2)">
+                    {% if log.detected_types %}{{ log.detected_types|join:", "|truncatechars:40 }}{% else %}No threats detected{% endif %}
+                  </span>
+                </div>
+                <div class="activity-meta">
+                  <i class="bi bi-clock me-1"></i>{{ log.timestamp|date:"M d, Y — H:i" }}
+                  <span class="ms-3"><span class="risk-badge-sm risk-{{ log.risk_level|lower }}">{{ log.risk_level }} {{ log.risk_score }}%</span></span>
+                </div>
+              </div>
+              {% if user.role == 'ADMIN' %}
+              <a href="{% url 'log_detail' log.id %}" class="btn-view-detail ms-auto" style="white-space:nowrap">
+                <i class="bi bi-eye"></i>View
+              </a>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size:2.5rem;color:var(--text-3);display:block;margin-bottom:0.75rem"></i>
+            <p style="color:var(--text-3);font-size:0.88rem;margin:0">No submissions yet. Submit your first prompt to see activity here.</p>
+          </div>
+          {% endif %}
+        </div>
+        {% if total_submissions > 5 and user.role == 'ADMIN' %}
+        <div style="padding:0.75rem 1.25rem;border-top:1px solid var(--border);text-align:center">
+          <a href="{% url 'logs' %}" style="font-size:0.82rem;color:var(--primary);text-decoration:none;font-weight:500">
+            <i class="bi bi-journal-text me-1"></i>View all {{ total_submissions }} entries in Audit Logs
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Role-specific insights ── -->
+  {% if user.role == 'INTERN' %}
+  <div class="row g-3 mt-0 slide-up stagger-4">
+    <div class="col-12">
+      <div class="card" style="border-color:rgba(251,191,36,0.25);background:rgba(251,191,36,0.04)">
+        <div class="card-body d-flex align-items-center gap-3 py-3">
+          <i class="bi bi-mortarboard-fill" style="font-size:1.4rem;color:var(--warning);flex-shrink:0"></i>
+          <div>
+            <div style="font-weight:600;font-size:0.88rem;color:var(--warning)">Intern Access Mode</div>
+            <div style="font-size:0.81rem;color:var(--text-2)">You have restricted access. Submit text prompts only — all sensitive data (API keys, source code, credentials) will be automatically blocked by the firewall.</div>
+          </div>
+          <a href="{% url 'prompt' %}" class="btn btn-ghost ms-auto" style="white-space:nowrap"><i class="bi bi-send-fill"></i>Try a Prompt</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+/* Permission rows */
+.perm-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:0.84rem;font-weight:500;line-height:1.4}
+.perm-allow{background:var(--success-g);color:var(--success)}
+.perm-block{background:var(--danger-g);color:var(--danger)}
+.perm-warn{background:rgba(124,58,237,0.1);color:var(--violet)}
+/* Light mode: ensure perm-warn text is dark enough */
+[data-theme="light"] .perm-warn, :root .perm-warn{background:rgba(109,40,217,0.08);color:#5B21B6}
+[data-theme="dark"] .perm-warn{background:rgba(167,139,250,0.15);color:#A78BFA}
+.perm-note{font-size:0.71rem;font-weight:400;opacity:0.85;margin-left:2px}
+.perm-row i{flex-shrink:0;font-size:0.9rem}
+
+/* Activity rows */
+.activity-row{display:flex;align-items:center;gap:12px;padding:0.9rem 1.25rem;position:relative}
+.activity-row-border{border-bottom:1px solid var(--border)}
+.activity-row:hover{background:rgba(99,102,241,0.03)}
+.activity-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.act-allow{background:var(--success);box-shadow:0 0 6px var(--success)}
+.act-block{background:var(--danger);box-shadow:0 0 6px var(--danger)}
+.act-tokenize{background:var(--violet);box-shadow:0 0 6px var(--violet)}
+.activity-main{flex:1;min-width:0}
+.activity-meta{font-size:0.73rem;color:var(--text-3);margin-top:4px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+</style>
+{% endblock %}

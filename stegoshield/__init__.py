@@ -1,0 +1,1 @@
+# stegoshield Django app

@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Portal - Aegis.AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --panel-bg: rgba(22, 30, 46, 0.7);
+      --panel-border: rgba(255, 255, 255, 0.05);
+      --accent-blue: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.5);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+    body { 
+      background-color: var(--bg-dark); 
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.1), transparent 40%);
+      background-attachment: fixed;
+    }
+    .sidebar { 
+      min-height: 100vh; 
+      background: rgba(15, 23, 42, 0.6); 
+      backdrop-filter: blur(10px);
+      border-right: 1px solid var(--panel-border);
+      padding-top: 30px;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    }
+    .sidebar .brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 2rem;
+    }
+    .sidebar a { 
+      color: var(--text-muted); 
+      text-decoration: none; 
+      padding: 12px 24px; 
+      display: block;
+      font-weight: 500;
+      border-radius: 8px;
+      margin: 4px 12px;
+      transition: all 0.3s ease;
+    }
+    .sidebar a:hover, .sidebar a.active { 
+      background: rgba(59, 130, 246, 0.1); 
+      color: #fff; 
+      box-shadow: inset 3px 0 0 var(--accent-blue);
+    }
+    .sidebar i { margin-right: 10px; font-size: 1.1rem; }
+    .content { padding: 40px; }
+    
+    /* Premium Cards */
+    .glass-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      padding: 24px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+    .page-title {
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+    }
+    
+    /* Tables */
+    .table { color: var(--text-main); --bs-table-bg: transparent; }
+    .table thead th { 
+      border-bottom: 1px solid rgba(255,255,255,0.1); 
+      color: var(--text-muted); 
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      padding-bottom: 12px;
+    }
+    .table tbody td { 
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: middle;
+      padding: 16px 8px;
+    }
+    .table tbody tr { transition: background 0.2s; }
+    .table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    
+    /* Forms & Buttons */
+    .form-control, .form-select {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+    }
+    .form-control:focus, .form-select:focus {
+      background: rgba(15, 23, 42, 0.8);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 0.25rem var(--accent-glow);
+      color: #fff;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+      transform: translateY(-1px);
+    }
+    
+    /* Tabs */
+    .nav-tabs { border-bottom: 1px solid var(--panel-border); }
+    .nav-tabs .nav-link { color: var(--text-muted); border: none; font-weight: 500; padding: 12px 20px; transition: 0.2s; }
+    .nav-tabs .nav-link:hover { color: #fff; border-color: transparent; isolation: isolate; }
+    .nav-tabs .nav-link.active { 
+      background: transparent; 
+      color: var(--accent-blue); 
+      border-bottom: 2px solid var(--accent-blue); 
+    }
+    
+    /* Badges */
+    .badge { padding: 6px 10px; font-weight: 500; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid p-0">
+    <div class="row g-0">
+      <nav class="col-md-2 d-none d-md-block sidebar">
+        <div class="px-4 brand"><i class="bi bi-shield-check me-2"></i>Aegis.AI</div>
+        <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+          <i class="bi bi-grid-1x2"></i> Dashboard
+        </a>
+        <a href="{% url 'admin_logs' %}" class="{% if request.resolver_match.url_name == 'admin_logs' %}active{% endif %}">
+          <i class="bi bi-activity"></i> Audit Logs
+        </a>
+        {% if user.is_super_admin_role %}
+        <a href="{% url 'admin_users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">
+          <i class="bi bi-people"></i> User Management
+        </a>
+        {% endif %}
+        <div class="mt-4 px-3"><hr style="border-color: var(--panel-border);"></div>
+        <a href="{% url 'logout' %}" class="text-danger mt-2">
+          <i class="bi bi-box-arrow-left"></i> Secure Logout
+        </a>
+      </nav>
+      <main class="col-md-10 ms-sm-auto content">
+        {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show glass-card py-3 mb-4" role="alert" style="border-left: 4px solid {% if message.tags == 'success' %}#22c55e{% elif message.tags == 'danger' or message.tags == 'error' %}#ef4444{% else %}#3b82f6{% endif %}">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% block title %}STEGOSHIELD – Aegis.AI{% endblock %}
+{% block page_title %}<i class="bi bi-shield-shaded me-2" style="color:var(--cyan)"></i>STEGOSHIELD{% endblock %}
+
+{% block content %}
+<div class="page-wrap fade-in">
+
+  <!-- ── Hero Banner ── -->
+  <div class="stego-hero mb-4 slide-up stagger-1">
+    <div class="row align-items-center" style="position:relative;z-index:1">
+      <div class="col-md-8">
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="stego-hero-icon">
+            <i class="bi bi-shield-shaded"></i>
+          </div>
+          <div>
+            <h2 class="hero-title mb-0">STEGOSHIELD</h2>
+            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+              <span class="stego-badge-active"><span class="pulse-dot" style="background:var(--cyan)"></span>Secure Channel Active</span>
+              <span style="font-size:0.78rem;color:var(--text-3)">Covert Data Protection Layer</span>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--text-2);font-size:0.88rem;margin:0">
+          Embed and extract sensitive messages using steganographic techniques.
+          Protected data is <span class="fw-semibold" style="color:var(--cyan)">never exposed</span> to LLM interactions.
+        </p>
+      </div>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="stego-stat-pill">
+          <i class="bi bi-activity"></i>
+          <span>{{ total_operations }} operation{{ total_operations|pluralize }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pipeline Visualization ── -->
+  <div class="card mb-4 slide-up stagger-2">
+    <div class="card-header"><i class="bi bi-diagram-3-fill"></i>Security Pipeline</div>
+    <div class="card-body" style="padding:0.75rem 1rem">
+      <div class="pipeline">
+        <div class="pl-step"><i class="bi bi-input-cursor-text"></i>Input</div>
+        <span class="pl-arrow"><i class="bi bi-chevron-right"></i></span>
+        <div class="pl-step"><i class="bi bi-fire"></i>Firewall</div>
+        <span class="pl-arrow"><i class="bi bi-chevron-right"></i></span>
+        <div class="pl-step active" style="border-color:var(--cyan);background:rgba(8,145,178,0.08);color:var(--cyan)">
+          <i class="bi bi-shield-shaded" style="color:var(--cyan)"></i>STEGOSHIELD
+        </div>
+        <span class="pl-arrow"><i class="bi bi-chevron-right"></i></span>
+        <div class="pl-step"><i class="bi bi-robot"></i>LLM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main Content: Tabs ── -->
+  <div class="row g-4 slide-up stagger-3">
+
+    <!-- Left: Encode / Decode Tabs -->
+    <div class="col-lg-8">
+      <div class="card">
+        <!-- Tab Navigation -->
+        <div class="stego-tabs">
+          <button class="stego-tab {% if not result or result.tab == 'encode' %}active{% endif %}"
+                  onclick="switchTab('encode')" id="tab-btn-encode" type="button">
+            <i class="bi bi-lock-fill"></i>Send Secure Message
+          </button>
+          <button class="stego-tab {% if result.tab == 'decode' %}active{% endif %}"
+                  onclick="switchTab('decode')" id="tab-btn-decode" type="button">
+            <i class="bi bi-unlock-fill"></i>Decode Message
+          </button>
+        </div>
+
+        <!-- ═══ ENCODE TAB ═══ -->
+        <div class="stego-tab-content {% if not result or result.tab == 'encode' %}active{% endif %}" id="tab-encode">
+          <form method="post" action="{% url 'stegoshield_encode' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Method Selector -->
+            <div class="mb-3">
+              <label class="stego-label">Encoding Method</label>
+              <div class="stego-method-toggle">
+                <label class="stego-method-opt">
+                  <input type="radio" name="method" value="TEXT" checked onchange="toggleMethod('encode')">
+                  <span><i class="bi bi-file-text-fill"></i>Text Steganography</span>
+                </label>
+                <label class="stego-method-opt">
+                  <input type="radio" name="method" value="FILE" onchange="toggleMethod('encode')">
+                  <span><i class="bi bi-file-earmark-lock-fill"></i>File Steganography</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Secret Message -->
+            <div class="mb-3">
+              <label class="stego-label" for="enc-secret">Secret Message</label>
+              <textarea class="prompt-editor" id="enc-secret" name="secret_message" rows="3"
+                        placeholder="Enter the sensitive data to protect…" required></textarea>
+            </div>
+
+            <!-- Passkey -->
+            <div class="mb-3">
+              <label class="stego-label" for="enc-passkey">
+                Passkey <span class="stego-label-hint">(optional — adds encryption layer)</span>
+              </label>
+              <div class="stego-passkey-wrap">
+                <i class="bi bi-key-fill"></i>
+                <input type="password" class="stego-passkey-input" id="enc-passkey" name="passkey"
+                       placeholder="Enter a shared passkey…" autocomplete="off">
+                <button type="button" class="stego-eye-btn" onclick="togglePasskeyVis('enc-passkey', this)" title="Show/hide">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Text Cover (for TEXT method) -->
+            <div class="mb-3 encode-text-fields">
+              <label class="stego-label" for="enc-cover">Cover Text</label>
+              <textarea class="prompt-editor" id="enc-cover" name="cover_text" rows="3"
+                        placeholder="Enter visible text that will carry the hidden message…"></textarea>
+              <div class="stego-help-text"><i class="bi bi-info-circle"></i>The cover text will appear unchanged but contain hidden data.</div>
+            </div>
+
+            <!-- File Browse (for FILE method) -->
+            <div class="mb-3 encode-file-fields" style="display:none">
+              <label class="stego-label">Cover File</label>
+              <div class="stego-file-input-wrap">
+                <label class="stego-file-browse" for="enc-cover-file">
+                  <i class="bi bi-folder2-open"></i>
+                  <span id="enc-file-label">Choose a file…</span>
+                  <input type="file" name="cover_file" id="enc-cover-file"
+                         onchange="updateFileLabel(this, 'enc-file-label')">
+                </label>
+              </div>
+              <div class="stego-help-text"><i class="bi bi-info-circle"></i>Any file type — image, PDF, document, audio, etc. The message is appended invisibly.</div>
+            </div>
+
+            <button type="submit" class="btn stego-btn-encode">
+              <i class="bi bi-lock-fill"></i>Encode Message
+            </button>
+          </form>
+
+          <!-- Encode Result -->
+          {% if result and result.tab == 'encode' %}
+          <div class="stego-result mt-4">
+            {% if result.status == 'success' %}
+            <div class="stego-status stego-status-success">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>✅ {{ result.message }}</span>
+            </div>
+            {% if result.method == 'TEXT' and result.encoded_text %}
+            <div class="mt-3">
+              <label class="stego-label">Encoded Text <span class="stego-label-hint">(copy and send to recipient)</span></label>
+              <div class="stego-output-box" id="encoded-output">{{ result.encoded_text }}</div>
+              <button type="button" class="btn btn-ghost mt-2" onclick="copyToClipboard('encoded-output')">
+                <i class="bi bi-clipboard"></i>Copy to Clipboard
+              </button>
+            </div>
+            {% elif result.has_download %}
+            <div class="mt-3">
+              <a href="{% url 'stegoshield_download_file' %}" class="btn stego-btn-download">
+                <i class="bi bi-download"></i>Download Stego File{% if result.stego_filename %} — {{ result.stego_filename }}{% endif %}
+              </a>
+              <div class="stego-help-text mt-2">
+                <i class="bi bi-info-circle"></i>
+                Save this file. To decode later, go to the <strong>Decode Message</strong> tab → select <strong>File Steganography</strong> → upload this file.
+              </div>
+            </div>
+            {% endif %}
+            {% elif result.status == 'error' %}
+            <div class="stego-status stego-status-error">
+              <i class="bi bi-x-octagon-fill"></i>
+              <span>❌ {{ result.message }}</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- ═══ DECODE TAB ═══ -->
+        <div class="stego-tab-content {% if result.tab == 'decode' %}active{% endif %}" id="tab-decode">
+          <form method="post" action="{% url 'stegoshield_decode' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Method Selector -->
+            <div class="mb-3">
+              <label class="stego-label">Decoding Method</label>
+              <div class="stego-method-toggle">
+                <label class="stego-method-opt">
+                  <input type="radio" name="method" value="TEXT" checked onchange="toggleMethod('decode')">
+                  <span><i class="bi bi-file-text-fill"></i>Text Steganography</span>
+                </label>
+                <label class="stego-method-opt">
+                  <input type="radio" name="method" value="FILE" onchange="toggleMethod('decode')">
+                  <span><i class="bi bi-file-earmark-lock-fill"></i>File Steganography</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Passkey -->
+            <div class="mb-3">
+              <label class="stego-label" for="dec-passkey">
+                Passkey <span class="stego-label-hint">(must match sender's passkey)</span>
+              </label>
+              <div class="stego-passkey-wrap">
+                <i class="bi bi-key-fill"></i>
+                <input type="password" class="stego-passkey-input" id="dec-passkey" name="passkey"
+                       placeholder="Enter the shared passkey…" autocomplete="off">
+                <button type="button" class="stego-eye-btn" onclick="togglePasskeyVis('dec-passkey', this)" title="Show/hide">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Text Input (for TEXT method) -->
+            <div class="mb-3 decode-text-fields">
+              <label class="stego-label" for="dec-encoded">Encoded Text</label>
+              <textarea class="prompt-editor" id="dec-encoded" name="encoded_text" rows="4"
+                        placeholder="Paste the encoded text received from the sender…"></textarea>
+            </div>
+
+            <!-- File Browse (for FILE method) -->
+            <div class="mb-3 decode-file-fields" style="display:none">
+              <label class="stego-label">Stego File</label>
+              <div class="stego-decode-hint mb-2">
+                <i class="bi bi-lightbulb-fill" style="color:var(--warning)"></i>
+                Upload the <strong>stego file</strong> you downloaded after encoding — it keeps the original file extension (e.g. <code>.pdf</code>, <code>.png</code>).
+              </div>
+              <div class="stego-file-input-wrap">
+                <label class="stego-file-browse" for="dec-stego-file">
+                  <i class="bi bi-folder2-open"></i>
+                  <span id="dec-file-label">Choose the stego file…</span>
+                  <input type="file" name="stego_file" id="dec-stego-file"
+                         onchange="updateFileLabel(this, 'dec-file-label')">
+                </label>
+              </div>
+              <div class="stego-help-text"><i class="bi bi-info-circle"></i>The file looks identical to the original — the hidden message is extracted from it.</div>
+            </div>
+
+            <button type="submit" class="btn stego-btn-decode">
+              <i class="bi bi-unlock-fill"></i>Decode Message
+            </button>
+          </form>
+
+          <!-- Decode Result -->
+          {% if result and result.tab == 'decode' %}
+          <div class="stego-result mt-4">
+            {% if result.status == 'success' %}
+            <div class="stego-status stego-status-success">
+              <i class="bi bi-unlock-fill"></i>
+              <span>🔓 {{ result.message }}</span>
+            </div>
+            <div class="mt-3">
+              <label class="stego-label">Decoded Secret Message</label>
+              <div class="stego-decoded-box">{{ result.decoded_text }}</div>
+            </div>
+            {% elif result.status == 'unauthorized' %}
+            <div class="stego-status stego-status-unauthorized">
+              <i class="bi bi-shield-exclamation"></i>
+              <span>❌ Unauthorized — {{ result.message }}</span>
+            </div>
+            {% elif result.status == 'error' %}
+            <div class="stego-status stego-status-error">
+              <i class="bi bi-x-octagon-fill"></i>
+              <span>❌ {{ result.message }}</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: Activity Log -->
+    <div class="col-lg-4">
+
+      <!-- Quick Info -->
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-info-circle-fill"></i>How It Works</div>
+        <div class="card-body" style="padding:0.9rem 1rem">
+          <div class="stego-info-step">
+            <div class="stego-info-num">1</div>
+            <div>
+              <div class="stego-info-title">Sender encodes</div>
+              <div class="stego-info-desc">Secret message is embedded in cover text or any file using steganography</div>
+            </div>
+          </div>
+          <div class="stego-info-step">
+            <div class="stego-info-num">2</div>
+            <div>
+              <div class="stego-info-title">Secure transfer</div>
+              <div class="stego-info-desc">Encoded content appears normal — hidden data is invisible</div>
+            </div>
+          </div>
+          <div class="stego-info-step">
+            <div class="stego-info-num">3</div>
+            <div>
+              <div class="stego-info-title">Receiver decodes</div>
+              <div class="stego-info-desc">Original message is extracted using the same passkey</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="card">
+        <div class="card-header d-flex gap-2 align-items-center">
+          <i class="bi bi-clock-history"></i>Recent Activity
+          <span class="ms-auto" style="font-size:0.72rem;color:var(--text-3);font-weight:400">
+            {{ recent_logs|length }} of {{ total_operations }}
+          </span>
+        </div>
+        <div class="card-body" style="padding:0">
+          {% if recent_logs %}
+          {% for log in recent_logs %}
+          <div class="stego-log-row {% if not forloop.last %}stego-log-border{% endif %}">
+            <div class="stego-log-icon stego-log-{{ log.status|lower }}">
+              {% if log.action == 'ENCODE' %}
+              <i class="bi bi-lock-fill"></i>
+              {% else %}
+              <i class="bi bi-unlock-fill"></i>
+              {% endif %}
+            </div>
+            <div class="stego-log-main">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="stego-log-action stego-log-action-{{ log.action|lower }}">{{ log.action }}</span>
+                <span class="stego-log-method">{{ log.method }}</span>
+                <span class="stego-log-status-badge stego-log-status-{{ log.status|lower }}">{{ log.status }}</span>
+              </div>
+              <div class="stego-log-time">
+                <i class="bi bi-clock me-1"></i>{{ log.timestamp|date:"M d, H:i" }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center py-4">
+            <i class="bi bi-shield-shaded" style="font-size:2rem;color:var(--text-3);display:block;margin-bottom:0.5rem"></i>
+            <p style="color:var(--text-3);font-size:0.85rem;margin:0">No STEGOSHIELD activity yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── Tab switching ── */
+function switchTab(tab) {
+  document.querySelectorAll('.stego-tab-content').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.stego-tab').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+}
+
+/* ── Method toggle (show/hide text vs file fields) ── */
+function toggleMethod(context) {
+  var form = document.getElementById('tab-' + context);
+  var radios = form.querySelectorAll('input[name="method"]');
+  var method = 'TEXT';
+  radios.forEach(function(r) { if (r.checked) method = r.value; });
+
+  var textFields = form.querySelectorAll('.' + context + '-text-fields');
+  var fileFields = form.querySelectorAll('.' + context + '-file-fields');
+
+  textFields.forEach(function(el) { el.style.display = method === 'TEXT' ? '' : 'none'; });
+  fileFields.forEach(function(el) { el.style.display = method === 'FILE' ? '' : 'none'; });
+}
+
+/* ── Passkey visibility toggle ── */
+function togglePasskeyVis(inputId, btn) {
+  var input = document.getElementById(inputId);
+  var icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye-slash';
+  }
+}
+
+/* ── Copy to clipboard ── */
+function copyToClipboard(elementId) {
+  var el = document.getElementById(elementId);
+  var text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    showToast('Encoded text copied to clipboard!', 'success');
+  }).catch(function() {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    showToast('Encoded text copied!', 'success');
+  });
+}
+
+/* ── File browse label update ── */
+function updateFileLabel(input, labelId) {
+  var label = document.getElementById(labelId);
+  if (input.files && input.files[0]) {
+    var f = input.files[0];
+    var sizeKB = (f.size / 1024).toFixed(1);
+    label.innerHTML = '<strong>' + f.name + '</strong> <span style="color:var(--text-3);font-weight:400">(' + sizeKB + ' KB)</span>';
+    input.closest('.stego-file-browse').classList.add('has-file');
+  } else {
+    label.textContent = labelId.includes('enc') ? 'Choose a file…' : 'Choose the stego file…';
+    input.closest('.stego-file-browse').classList.remove('has-file');
+  }
+}
+</script>
+{% endblock %}
