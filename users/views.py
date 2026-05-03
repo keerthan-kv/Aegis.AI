@@ -107,8 +107,11 @@ def login_view(request):
 
         if not auth_user.email_verified:
             otp = OTPToken.generate_for_user(auth_user)
-            send_otp_email(auth_user, otp)
-            messages.warning(request, "Please verify your email first.")
+            email_sent = send_otp_email(auth_user, otp)
+            if email_sent:
+                messages.warning(request, "Please verify your email first.")
+            else:
+                messages.warning(request, f"Please verify your email first. (Demo Mode) Email failed. OTP: {otp}")
             request.session["verify_user_id"] = auth_user.pk
             return redirect("verify_otp")
 
@@ -177,9 +180,13 @@ def signup_view(request):
         EmployeeApproval.objects.create(user=user)
 
         otp = OTPToken.generate_for_user(user)
-        send_otp_email(user, otp)
+        email_sent = send_otp_email(user, otp)
 
-        messages.success(request, "Account created! Please check your email for the verification code.")
+        if email_sent:
+            messages.success(request, "Account created! Please check your email for the verification code.")
+        else:
+            messages.warning(request, f"Account created! (Demo Mode) Email delivery failed. Your verification code is: {otp}")
+
         request.session["verify_user_id"] = user.pk
         return redirect("verify_otp")
 
@@ -230,8 +237,11 @@ def resend_otp_view(request):
         return redirect("login")
 
     otp = OTPToken.generate_for_user(user)
-    send_otp_email(user, otp)
-    messages.success(request, "A new OTP has been sent.")
+    email_sent = send_otp_email(user, otp)
+    if email_sent:
+        messages.success(request, "A new OTP has been sent.")
+    else:
+        messages.warning(request, f"(Demo Mode) Email failed. Your new OTP is: {otp}")
     return redirect("verify_otp")
 
 def forgot_password_view(request):
